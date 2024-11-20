@@ -303,8 +303,8 @@ class gui():
         self.ax.plot(start_x, start_y, 'ro', label="Start Position")
         self.ax.scatter([], [], color='darkgrey', label='Path')
         self.ax.scatter([], [], marker=r'$\rightarrow$', label=f"Front Sensor", color='red', s=100)
-        self.ax.scatter([], [], marker=r'$\rightarrow$', label=f"Left Sensor", color='blue', s=100)
-        self.ax.scatter([], [], marker=r'$\rightarrow$', label=f"Right Sensor", color='green', s=100)
+        self.ax.scatter([], [], marker=r'$\rightarrow$', label=f"Right Sensor", color='blue', s=100)
+        self.ax.scatter([], [], marker=r'$\rightarrow$', label=f"Left Sensor", color='green', s=100)
         # Set chart properties
         self.ax.set_aspect('equal')
         self.ax.set_xlabel("X")
