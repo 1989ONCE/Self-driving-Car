@@ -384,16 +384,19 @@ class gui():
             
     def predict_car_path(self):
         # Create or clear the files before writing
-        if os.path.exists('data/track4D.txt'):
-            os.remove('data/track4D.txt')
-        if os.path.exists('data/track6D.txt'):
-            os.remove('data/track6D.txt')
-        with open('data/track4D.txt', 'a') as f:
+        track4D_path = os.path.join(sys._MEIPASS, "data/track4D.txt") if hasattr(sys, '_MEIPASS') else "data/track4D.txt"
+        track6D_path = os.path.join(sys._MEIPASS, "data/track6D.txt") if hasattr(sys, '_MEIPASS') else "data/track6D.txt"
+
+        if os.path.exists(track4D_path):
+            os.remove(track4D_path)
+        if os.path.exists(track6D_path):
+            os.remove(track6D_path)
+
+        with open(track4D_path, 'a') as f:
             f.write(f'{self.car.front_distance} {self.car.right_distance} {self.car.left_distance} {self.outputs[0]}\n')
 
-        with open('data/track6D.txt', 'a') as f:
+        with open(track6D_path, 'a') as f:
             f.write(f'{self.car.currentX} {self.car.currentY} {self.car.front_distance} {self.car.right_distance} {self.car.left_distance} {self.outputs[0]}\n')
-            
 
         if self.model is None:
             messagebox.showerror('showerror', 'No Model to Predict')
@@ -423,12 +426,12 @@ class gui():
             #     print('Collision Detected! Stopping Prediction.')
             #     flag = False
 
-            with open('data/track4D.txt', 'a') as f:
+            with open(track4D_path, 'a') as f:
                 f.write(f'{self.car.front_distance} {self.car.right_distance} {self.car.left_distance} {output}\n')
 
-            with open('data/track6D.txt', 'a') as f:
+            with open(track6D_path, 'a') as f:
                 f.write(f'{self.car.currentX} {self.car.currentY} {self.car.front_distance} {self.car.right_distance} {self.car.left_distance} {output}\n')
-            
+
             
             # Check if car is in finishing area
             if 18 <= self.car.currentX <= 30 and 37 <= self.car.currentY:
