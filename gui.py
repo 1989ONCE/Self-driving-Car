@@ -18,7 +18,9 @@ def str2float(strlist):
 
 class gui():
     def __init__(self, app_name, app_width, app_height):
+        self.track = []
         self.model = None
+        self.loss_list = []
         self.path_result = []
         self.data = []
         self.inputs = np.array([])
@@ -38,9 +40,8 @@ class gui():
         self.container.geometry(str(app_width) + 'x' + str(app_height))
 
         # components initialization
-        self.graph_frame = tk.Frame(self.container, width=900, height=420, bg='green')
-        self.setting_frame = tk.Frame(self.container, width=500, height=900, bg='red')
-        self.result_frame = tk.Frame(self.container, width=900, height=320, bg='blue')
+        self.graph_frame = tk.Frame(self.container, width=900, height=450, bg='white')
+        self.setting_frame = tk.Frame(self.container, width=500, height=900, bg='white')
 
         self.track_graph = FigureCanvasTkAgg(master = self.graph_frame)
         self.track_graph.get_tk_widget().config(width=430, height=400)
@@ -51,7 +52,7 @@ class gui():
 
         self.dataDropDown = ttk.Combobox(master = self.setting_frame,
                         values=['train4dAll.txt', 'train6dAll.txt'])
-        self.dataDropDown.set('train6dAll.txt')
+        self.dataDropDown.set('train4dAll.txt')
         self.dataDropDown.bind("<<ComboboxSelected>>",  lambda e: self.load(self.dataDropDown.get()))
 
         self.model_title = tk.Label(self.setting_frame, text='Model Selection', bg='white', wraplength=300)
@@ -61,10 +62,10 @@ class gui():
         self.modelDropDown.bind("<<ComboboxSelected>>",  lambda e: self.model_combobox_selected())
         
         self.epoch_label = tk.Label(self.setting_frame, text='Epoch:', bg='white')
-        self.epoch_box = tk.Spinbox(self.setting_frame, increment=1, from_=0, width=5, bg='white', textvariable=tk.StringVar(value='2'))
+        self.epoch_box = tk.Spinbox(self.setting_frame, increment=1, from_=0, width=5, bg='white', textvariable=tk.StringVar(value='100'))
 
         self.lrn_rate_label = tk.Label(self.setting_frame, text='Learning Rate:', bg='white')
-        self.lrn_rate_box = tk.Spinbox(self.setting_frame,  format="%.2f", increment=0.01, from_=0.0,to=1, width=5, bg='white', textvariable=tk.StringVar(value='0.01'))
+        self.lrn_rate_box = tk.Spinbox(self.setting_frame,  format="%.4f", increment=0.01, from_=0.0,to=1, width=5, bg='white', textvariable=tk.StringVar(value='0.001'))
         self.train_btn = tk.Button(master = self.setting_frame,  
                      command = self.train, 
                      height = 2,  
@@ -90,16 +91,15 @@ class gui():
 
         # components placing
         self.setting_frame.place(x=5, y=250)
-        self.result_frame.place(x=400, y=5)
-        self.graph_frame.place(x=400, y=330)
+        self.graph_frame.place(x=400, y=250)
         self.track_graph.get_tk_widget().place(x=10, y=10)
         self.loss_graph.get_tk_widget().place(x=450, y=10)
 
         self.figure = None
         self.dataset_title.grid(row=0, column=0, padx=5, pady=5, sticky='w')
         self.dataDropDown.grid(row=0, column=1, padx=5, pady=5, sticky='w')
-        self.model_title.grid(row=1, column=0, padx=5, pady=5, sticky='w')
-        self.modelDropDown.grid(row=1, column=1, padx=5, pady=5, sticky='w')
+        # self.model_title.grid(row=1, column=0, padx=5, pady=5, sticky='w')
+        # self.modelDropDown.grid(row=1, column=1, padx=5, pady=5, sticky='w')
         self.epoch_label.grid(row=2, column=0, padx=5, pady=5, sticky='w')
         self.epoch_box.grid(row=2, column=1, padx=5, pady=5, sticky='w')
         self.lrn_rate_label.grid(row=3, column=0, padx=5, pady=5, sticky='w')
@@ -168,12 +168,9 @@ class gui():
         self.container.mainloop()
 
     def train(self):
-        self.clear_artists()
-        if self.data == None:
-            messagebox.showerror('showerror', 'No Data to Train')
-            print('No Data to Train')
-            return
+        self.car = Car(0, 0, 90, self.track)
 
+        self.clear_artists()
         if self.lrn_validation() == False:
             return
         
@@ -184,6 +181,9 @@ class gui():
         try:
             self.dataDropDown.config(state='disabled')
             self.train_btn.config(state='disabled')
+            self.save_btn.config(state='disabled')
+            self.run_car_btn.config(state='disabled')
+
             print('Training...')
             print('Len of Inputs:', len(self.inputs))
             print('dim of Inputs:', len(self.inputs[0]))
@@ -192,10 +192,14 @@ class gui():
             self.epoch = int(self.epoch_box.get())
             
             # Initialize multi-layer perceptron(Backpropagation Network)
+            print(self.inputs[0])
             self.model = MLP(len(self.inputs[0]), self.lr)
             
-            self.model.train(self.inputs, self.outputs, self.lr, self.epoch)
+            self.loss_list = self.model.train(self.inputs, self.outputs, self.lr, self.epoch)
             print('Training Done')
+            self.draw_loss_graph()
+            # predict car path
+            self.predict_car_path()
 
             # Visualize Results
             self.dataDropDown.config(state='normal')
@@ -273,7 +277,9 @@ class gui():
         
         # Extract x and y coordinates from boundaries
         boundary_x, boundary_y = zip(*boundaries)
-        self.car = Car(0, 0, phi, boundaries)
+        self.track = boundaries
+        self.car = Car(start_x, start_y, phi, boundaries)
+
         print('boundaries', boundaries)
         self.figure = plt.Figure(figsize=(15, 15), dpi=100)
         self.ax = self.figure.add_subplot(111)
@@ -334,7 +340,6 @@ class gui():
             self.model = RBFN()
 
     def run_car(self):
-        
         if len(self.car_artists) > 0:
             for artist in self.car_artists:
                 if artist is not None:
@@ -348,9 +353,9 @@ class gui():
         
         # read result.txt
         if hasattr(sys, '_MEIPASS'):
-            path = os.path.join(sys._MEIPASS, "data/result.txt")
+            path = os.path.join(sys._MEIPASS, "track4D.txt")
         else:
-            path = os.path.join(os.path.abspath("."), "data/result.txt")
+            path = os.path.join(os.path.abspath("."), "track4D.txt")
 
         with open(path, 'r') as f:
             lines = f.readlines()
@@ -374,9 +379,10 @@ class gui():
                     distances = self.car.get_distances()
                     time.sleep(0.01)
                     # 繪製感測器箭頭和車子
-                    self.car_artists.append(self.car.draw_sensor_distance_arrow(self.ax, 'Front', self.car.currentX, self.car.currentY, self.car.currentPHI, distances[0]))
-                    self.car_artists.append(self.car.draw_sensor_distance_arrow(self.ax, 'Left', self.car.currentX, self.car.currentY, self.car.currentPHI + 45, distances[1]))
-                    self.car_artists.append(self.car.draw_sensor_distance_arrow(self.ax, 'Right', self.car.currentX, self.car.currentY, self.car.currentPHI - 45, distances[2]))
+                    if distances[0] > 3 and distances[1] > 3 and distances[2] > 3:
+                        self.car_artists.append(self.car.draw_sensor_distance_arrow(self.ax, 'Front', self.car.currentX, self.car.currentY, self.car.currentPHI, distances[0]))
+                        self.car_artists.append(self.car.draw_sensor_distance_arrow(self.ax, 'Left', self.car.currentX, self.car.currentY, self.car.currentPHI + 45, distances[1]))
+                        self.car_artists.append(self.car.draw_sensor_distance_arrow(self.ax, 'Right', self.car.currentX, self.car.currentY, self.car.currentPHI - 45, distances[2]))
                     car, text, center = self.car.draw_car(self.ax)
                     self.car_artists.append(car)
                     self.car_artists.append(text)
@@ -390,3 +396,74 @@ class gui():
                 print(f'Error running car: {e}')
                 self.train_btn.config(state='normal')
                 return None
+            
+    def predict_car_path(self):
+        # Create or clear the files before writing
+        if os.path.exists('track4D.txt'):
+            os.remove('track4D.txt')
+        if os.path.exists('track6D.txt'):
+            os.remove('track6D.txt')
+        with open('track4D.txt', 'a') as f:
+            f.write(f'{self.car.front_distance} {self.car.right_distance} {self.car.left_distance} {self.outputs[0]}\n')
+
+        with open('track6D.txt', 'a') as f:
+            f.write(f'{self.car.currentX} {self.car.currentY} {self.car.front_distance} {self.car.right_distance} {self.car.left_distance} {self.outputs[0]}\n')
+            
+
+        if self.model is None:
+            messagebox.showerror('showerror', 'No Model to Predict')
+            print('No Model to Predict')
+            return
+        print('Predicting Car Path...')
+        flag = True
+        output = self.model.predict(self.inputs[0])
+        
+        # get next theta from model
+        while flag:
+            print('Output:', output)
+            self.car.set_currentTHETA(output)
+            self.car.update_position()
+            
+            # Check for collision
+            if self.car.front_distance <= 3 or self.car.right_distance <= 3 or self.car.left_distance <= 3 or not self.car.is_within_boundaries():
+                print(self.car.front_distance, self.car.right_distance, self.car.left_distance, self.car.is_within_boundaries())
+                print('Collision Detected! Stopping Prediction.')
+                flag = False
+            
+            # Check if car is in finishing area
+            if 18 <= self.car.currentX <= 30 and 37 <= self.car.currentY:
+                messagebox.showinfo('showinfo', 'Car has reached the finishing area!')
+                print('Car has reached the finishing area! Stopping Prediction.')
+                flag = False
+            
+            with open('track4D.txt', 'a') as f:
+                f.write(f'{self.car.front_distance} {self.car.right_distance} {self.car.left_distance} {output}\n')
+
+            with open('track6D.txt', 'a') as f:
+                f.write(f'{self.car.currentX} {self.car.currentY} {self.car.front_distance} {self.car.right_distance} {self.car.left_distance} {output}\n')
+            
+                
+            if len(self.inputs[0]) == 3:
+                output = self.model.predict([self.car.front_distance, self.car.right_distance, self.car.left_distance])
+            else:
+                output = self.model.predict([self.car.currentX, self.car.currentY, self.car.front_distance, self.car.right_distance, self.car.left_distance])
+
+    def draw_loss_graph(self):
+        if not self.loss_list:
+            messagebox.showerror('showerror', 'No Loss Data to Plot')
+            print('No Loss Data to Plot')
+            return
+
+        # Create a new figure for the loss graph
+        self.loss_figure = plt.Figure(figsize=(4.3, 4), dpi=100)
+        loss_ax = self.loss_figure.add_subplot(111)
+        loss_ax.plot(self.loss_list, label='Training Loss')
+        loss_ax.set_title('Training Loss Over Epochs')
+        loss_ax.set_xlabel('Epoch')
+        loss_ax.set_ylabel('Loss')
+        loss_ax.legend()
+        loss_ax.grid(True)
+
+        # Update the loss graph in the GUI
+        self.loss_graph.figure = self.loss_figure
+        self.loss_graph.draw()

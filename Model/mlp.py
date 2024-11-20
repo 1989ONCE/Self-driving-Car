@@ -5,16 +5,18 @@ class MLP(Model):
     def __init__(self, input_size, learning_rate):
         self.input_size = input_size
         self.learning_rate = learning_rate
+        self.y_mean = 0
+        self.y_std = 0
         self.init_weights()
 
     def init_weights(self):
         # hidden layer:
-        # layer 1: 8 neurons; layer 2: 6 neurons
+        # layer 1: 64 neurons; layer 2: 16 neurons
         # output:
         # layer 3: 1 neuron
 
-        layer1_neurons = 8
-        layer2_neurons = 6
+        layer1_neurons = 64
+        layer2_neurons = 16
         layer3_neurons = 1
         # Xavier initialization for weights
         self.weights_layer1 = np.random.randn(layer1_neurons, self.input_size + 1) * np.sqrt(2. / (self.input_size + 1))
@@ -29,9 +31,18 @@ class MLP(Model):
 
     def sigmoid(self, vj):
         return 1 / (1 + np.exp(-vj))
+    
+    def relu(self, vj):
+        return np.maximum(0, vj)
+    
+    def relu_deriative(self, vj):
+        return np.where(vj >= 0, 1, 0)
 
     def leaky_relu(self, vj, alpha=0.01):
         return np.maximum(alpha * vj, vj)
+    
+    def leaky_relu_deriative(self, vj, alpha=0.01):
+        return np.where(vj >= 0, 1, alpha)
     
     def mean_squared_error(self, y, y_pred):
         return np.mean((y - y_pred) ** 2)
@@ -42,17 +53,17 @@ class MLP(Model):
         for w in self.weights_layer1:
             # print(w)
             # print(self.sigmoid(np.dot(w.T, bias_x1)))
-            hidden_output1.append(self.leaky_relu(np.dot(w.T, bias_x1)))
+            hidden_output1.append(self.relu(np.dot(w.T, bias_x1)))
         # print(hidden_output1)
         bias_x2 = np.insert(hidden_output1, 0, -1)        
         hidden_output2 = []
         for w in self.weights_layer2:
-            hidden_output2.append(self.leaky_relu(np.dot(w.T, bias_x2)))
+            hidden_output2.append(self.relu(np.dot(w.T, bias_x2)))
         # print(hidden_output2)
         bias_x3 = np.insert(hidden_output2, 0, -1)
         # print(bias_x3)
         # output = self.sigmoid(np.dot(self.weights_layer3[0].T, bias_x3))
-        output = self.sigmoid(np.dot(self.weights_layer3[0].T, bias_x3))
+        output = np.dot(self.weights_layer3[0].T, bias_x3)
         # print(output)
         return hidden_output1, hidden_output2, output
 
@@ -60,19 +71,18 @@ class MLP(Model):
         # backpropagation of the output layer
         output_delta = []
         output_error = y - output
-        output_delta.append(output_error * output * (1 - output))
-        
+        output_delta.append(output_error)        
         # backpropagation of the hidden layer
         # layer 2
         layer2_delta = []
         for h in range(len(hidden_output2)):
-            delta = hidden_output2[h] * (1 - hidden_output2[h]) * np.sum(output_delta * self.weights_layer3[:, h+1])
+            delta = hidden_output2[h] * self.relu_deriative(hidden_output2[h]) * np.sum(output_delta * self.weights_layer3[:, h+1])
             layer2_delta.append(delta)
 
         # layer 1
         layer1_delta = []
         for h in range(len(hidden_output1)):
-            delta = hidden_output1[h] * (1 - hidden_output1[h]) * np.sum(output_delta * self.weights_layer2[:, h+1])
+            delta = hidden_output1[h] * self.relu_deriative(hidden_output1[h]) * np.sum(layer2_delta * self.weights_layer2[:, h+1])
             layer1_delta.append(delta)
 
         # update weights
@@ -92,8 +102,10 @@ class MLP(Model):
     def train(self, X, y, lr, epochs):
         # Normalize input data
         X = (X - X.mean(axis=0)) / X.std(axis=0)
+        self.y_mean = y.mean(axis=0)
+        self.y_std = y.std(axis=0)
         y = (y - y.mean(axis=0)) / y.std(axis=0)
-
+        loss_list = []
         for epoch in range(epochs):
             total_loss = 0
             for i in range(len(X)):
@@ -105,15 +117,18 @@ class MLP(Model):
                 total_loss += self.mean_squared_error(y[i], output)
             
             
-            print(f"Epoch {epoch}, Loss: {total_loss/len(y):.4f}")
-
+            print(f"Epoch {epoch+1}, Loss: {total_loss/len(y):.4f}")
+            loss_list.append(total_loss/len(y))
             # Check for NaN or instability
             # total_loss is Not a Number or too large
             if np.isnan(total_loss) or total_loss >= 1e6: 
                 print("Training stopped due to NaN values.")
                 break
+        return loss_list
 
-    def predict(self, front, left, right):
-        input_data = np.array([[front, left, right]])
-        return self.forward(input_data)[0, 0]
+    def predict(self, inputs):
+        # normalize input
+        hidden_1, hidden_2, output = self.forward(inputs)
+        output = np.clip((output * self.y_std) + self.y_mean, -40, 40)
+        return output
 

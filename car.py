@@ -1,8 +1,7 @@
-from itertools import pairwise
 import math
 import numpy as np
 import matplotlib.pyplot as plt
-from shapely.geometry import LineString, Point, Polygon
+from matplotlib.path import Path
 
 
 class Car():
@@ -103,6 +102,10 @@ class Car():
             distances.append(min_dist)
         
         return distances
+    
+    def is_within_boundaries(self):
+        track_path = Path(self.track)
+        return track_path.contains_point((self.currentX, self.currentY))
 
     def get_car_status(self):
         return self.currentX, self.currentY, self.currentPHI, self.currentTHETA
