@@ -337,9 +337,10 @@ class gui():
         
         # read result.txt
         if hasattr(sys, '_MEIPASS'):
-            path = os.path.join(sys._MEIPASS, "track4D.txt")
+            path = os.path.join(sys._MEIPASS, "data/track4D.txt")
         else:
-            path = os.path.join(os.path.abspath("."), "track4D.txt")
+            # In development mode
+            path = os.path.join(os.path.abspath("."), "data/track4D.txt")
 
         with open(path, 'r') as f:
             lines = f.readlines()
@@ -383,14 +384,14 @@ class gui():
             
     def predict_car_path(self):
         # Create or clear the files before writing
-        if os.path.exists('track4D.txt'):
-            os.remove('track4D.txt')
-        if os.path.exists('track6D.txt'):
-            os.remove('track6D.txt')
-        with open('track4D.txt', 'a') as f:
+        if os.path.exists('data/track4D.txt'):
+            os.remove('data/track4D.txt')
+        if os.path.exists('data/track6D.txt'):
+            os.remove('data/track6D.txt')
+        with open('data/track4D.txt', 'a') as f:
             f.write(f'{self.car.front_distance} {self.car.right_distance} {self.car.left_distance} {self.outputs[0]}\n')
 
-        with open('track6D.txt', 'a') as f:
+        with open('data/track6D.txt', 'a') as f:
             f.write(f'{self.car.currentX} {self.car.currentY} {self.car.front_distance} {self.car.right_distance} {self.car.left_distance} {self.outputs[0]}\n')
             
 
@@ -422,10 +423,10 @@ class gui():
             #     print('Collision Detected! Stopping Prediction.')
             #     flag = False
 
-            with open('track4D.txt', 'a') as f:
+            with open('data/track4D.txt', 'a') as f:
                 f.write(f'{self.car.front_distance} {self.car.right_distance} {self.car.left_distance} {output}\n')
 
-            with open('track6D.txt', 'a') as f:
+            with open('data/track6D.txt', 'a') as f:
                 f.write(f'{self.car.currentX} {self.car.currentY} {self.car.front_distance} {self.car.right_distance} {self.car.left_distance} {output}\n')
             
             
