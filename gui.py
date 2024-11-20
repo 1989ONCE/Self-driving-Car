@@ -18,7 +18,7 @@ def str2float(strlist):
 class gui():
     def __init__(self, app_name, app_width, app_height):
         self.track = []
-        self.model = None
+        self.model = MLP()
         self.loss_list = []
         self.path_result = []
         self.data = []
@@ -40,7 +40,7 @@ class gui():
 
         # components initialization
         self.graph_frame = tk.Frame(self.container, width=900, height=450, bg='white')
-        self.setting_frame = tk.Frame(self.container, width=500, height=900, bg='white')
+        self.setting_frame = tk.Frame(self.container, width=500, height=450, bg='white')
 
         self.track_graph = FigureCanvasTkAgg(master = self.graph_frame)
         self.track_graph.get_tk_widget().config(width=430, height=400)
@@ -57,8 +57,8 @@ class gui():
         self.model_title = tk.Label(self.setting_frame, text='Model Selection', bg='white', wraplength=300)
         self.modelDropDown = ttk.Combobox(master = self.setting_frame,
                         values=['MLP', 'RBFN'])
-        self.modelDropDown.set('MLP')
-        self.modelDropDown.bind("<<ComboboxSelected>>",  lambda e: self.model_combobox_selected())
+        # self.modelDropDown.set('MLP')
+        # self.modelDropDown.bind("<<ComboboxSelected>>",  lambda e: self.model_combobox_selected())
         
         self.epoch_label = tk.Label(self.setting_frame, text='Epoch:', bg='white')
         self.epoch_box = tk.Spinbox(self.setting_frame, increment=1, from_=0, width=5, bg='white', textvariable=tk.StringVar(value='100'))
@@ -86,11 +86,20 @@ class gui():
                      width = 16, 
                      text = "Save Track Graph",
                      highlightbackground='white')
+        self.layer_label = tk.Label(self.setting_frame, text="Model Layers:", bg='white', wraplength=300)
+        self.layer_label.grid(row=6, column=0, columnspan=2, padx=5, pady=5, sticky='w')
         
+        self.layer_neuron1 = tk.Label(self.setting_frame, text=f"Layer 1 Neurons: {self.model.layer1_neurons}", bg='white')
+        self.layer_neuron2 = tk.Label(self.setting_frame, text=f"Layer 2 Neurons: {self.model.layer2_neurons}", bg='white')
+        self.layer_neuron3 = tk.Label(self.setting_frame, text=f"Layer 3 Neurons: {self.model.layer3_neurons}", bg='white')
 
+        self.layer_neuron1.grid(row=7, column=0, padx=5, pady=5, sticky='w')
+        self.layer_neuron2.grid(row=8, column=0, padx=5, pady=5, sticky='w')
+        self.layer_neuron3.grid(row=9, column=0, padx=5, pady=5, sticky='w')
+        
         # components placing
-        self.setting_frame.place(x=5, y=250)
-        self.graph_frame.place(x=400, y=250)
+        self.setting_frame.place(x=5, y=100)
+        self.graph_frame.place(x=400, y=100)
         self.track_graph.get_tk_widget().place(x=10, y=10)
         self.loss_graph.get_tk_widget().place(x=450, y=10)
 
@@ -190,9 +199,7 @@ class gui():
             print('Learning Rate:', self.lrn_rate_box.get())
             self.epoch = int(self.epoch_box.get())
             
-            # Initialize multi-layer perceptron(Backpropagation Network)
-            print(self.inputs[0])
-            self.model = MLP(len(self.inputs[0]), self.lr)
+            self.model.init_member(len(self.inputs[0]), self.lr)
             
             self.loss_list = self.model.train(self.inputs, self.outputs, self.lr, self.epoch)
             print('Training Done')
@@ -222,38 +229,6 @@ class gui():
                 if artist is not None:
                     artist.remove()
             self.path_artists = []
-
-
-    def init_all_member(self):
-        self.file_name = ''
-        self.data = None
-        self.inputs = np.array([])
-        self.outputs = np.array([])
-
-        self.epoch = 0
-        self.lr = 0
-        self.dim = 0
-        self.epoch_result = 1
-        self.best_epoch.config(text='')
-        self.best_weight.config(text='')
-        self.best_acc.config(text='')
-        self.train_result = []
-        self.test_result = []
-
-        self.figure = None
-        self.clear_all_graph()
-        self.dataset_title.config(text='Current File: No File Selected')
-        self.dim_text.config(text='')
-        self.sample_num.config(text='')
-        self.epoch_box.delete(0, tk.END)
-        self.epoch_box.insert(0, '100')
-        self.lrn_rate_box.delete(0, tk.END)
-        self.lrn_rate_box.insert(0, '0.1')
-        self.train_acc.config(text='...')
-        self.test_acc.config(text='...')
-        self.weight.config(text='...')
-        self.train_sample_num.config(text='')
-        self.test_sample_num.config(text='')
 
     def draw_car_track(self):
         if hasattr(sys, '_MEIPASS'):
@@ -332,11 +307,11 @@ class gui():
         self.track_graph.figure = self.figure
         self.track_graph.draw()
 
-    def model_combobox_selected(self):
-        if self.modelDropDown.get() == 'MLP':
-            self.model = MLP(self.input_size, self.learning_rate, self.hidden_size, self.output_size)
-        elif self.modelDropDown.get() == 'RBFN':
-            self.model = RBFN()
+    # def model_combobox_selected(self):
+    #     if self.modelDropDown.get() == 'MLP':
+    #         self.model = MLP(self.input_size, self.learning_rate, self.hidden_size, self.output_size)
+    #     elif self.modelDropDown.get() == 'RBFN':
+    #         self.model = RBFN()
 
     def run_car(self):
         if len(self.car_artists) > 0:

@@ -140,21 +140,9 @@ class Car():
                 return True  # Intersection occurs within the segment
             else:
                 return False  # Intersection occurs outside the segment
-
-    def get_car_status(self):
-        return self.currentX, self.currentY, self.currentPHI, self.currentTHETA
-
+            
     def set_currentTHETA(self, theta):
         self.currentTHETA = theta
-    
-    def set_car_status(self, x, y, front_d, left_d, right_d, phi):
-        self.currentX = x
-        self.currentY = y
-        self.currentPHI = phi
-
-        self.front_distance = front_d
-        self.left_distance = left_d
-        self.right_distance = right_d
     
     def get_distances(self):
         return self.front_distance, self.left_distance, self.right_distance

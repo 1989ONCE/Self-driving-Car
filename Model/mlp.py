@@ -2,30 +2,27 @@ from Model.model import Model
 import numpy as np
 
 class MLP(Model):
-    def __init__(self, input_size, learning_rate):
-        self.input_size = input_size
-        self.learning_rate = learning_rate
+    def __init__(self):
+        self.layer1_neurons = 4
+        self.layer2_neurons = 2
+        self.layer3_neurons = 1
         self.y_mean = 0
         self.y_std = 0
+
+    def init_member(self, input_size, learning_rate):
+        self.input_size = input_size
+        self.learning_rate = learning_rate
         self.init_weights()
 
     def init_weights(self):
-        # hidden layer:
-        # layer 1: 64 neurons; layer 2: 16 neurons
-        # output:
-        # layer 3: 1 neuron
-
-        layer1_neurons = 4
-        layer2_neurons = 2
-        layer3_neurons = 1
         # Xavier initialization for weights
         limit1 = np.sqrt(2. / (self.input_size + 1))
-        limit2 = np.sqrt(2. / (layer1_neurons + 1))
-        limit3 = np.sqrt(2. / (layer2_neurons + 1))
+        limit2 = np.sqrt(2. / (self.layer1_neurons + 1))
+        limit3 = np.sqrt(2. / (self.layer2_neurons + 1))
         
-        self.weights_layer1 = np.random.uniform(-limit1, limit1, (layer1_neurons, self.input_size + 1))
-        self.weights_layer2 = np.random.uniform(-limit2, limit2, (layer2_neurons, layer1_neurons + 1))
-        self.weights_layer3 = np.random.uniform(-limit3, limit3, (layer3_neurons, layer2_neurons + 1))
+        self.weights_layer1 = np.random.uniform(-limit1, limit1, (self.layer1_neurons, self.input_size + 1))
+        self.weights_layer2 = np.random.uniform(-limit2, limit2, (self.layer2_neurons, self.layer1_neurons + 1))
+        self.weights_layer3 = np.random.uniform(-limit3, limit3, (self.layer3_neurons, self.layer2_neurons + 1))
 
     def sigmoid(self, vj):
         return 1 / (1 + np.exp(-vj))
@@ -107,8 +104,8 @@ class MLP(Model):
                 # print(f"y: {y[i]}, output: {output}")
                 total_loss += self.mean_squared_error(y[i], output)
             
-            
-            print(f"Epoch {epoch+1}, Loss: {total_loss/len(y):.4f}")
+            if (epoch+1) % 10 == 0:
+                print(f"Epoch {epoch+1}, Loss: {total_loss/len(y):.4f}")
             loss_list.append(total_loss/len(y))
             # Check for NaN or instability
             # total_loss is Not a Number or too large
