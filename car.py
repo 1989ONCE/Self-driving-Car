@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.path import Path
 
-
 class Car():
     def __init__(self, initX, initY, phi, track):
         self.radius = 3             # the radius of the car
@@ -103,9 +102,44 @@ class Car():
         
         return distances
     
-    def is_within_boundaries(self):
-        track_path = Path(self.track)
-        return track_path.contains_point((self.currentX, self.currentY))
+    def check_collision(self):
+        # Iterate over each line segment in the track
+        for i in range(len(self.track) - 1):
+            start = np.array(self.track[i])
+            end = np.array(self.track[i + 1])
+            
+            # Check for intersection between the circle and the line segment
+            if self.circle_line_segment_intersect(start, end, np.array([self.currentX, self.currentY]), self.radius):
+                return True  # Collision detected
+        
+        return False  # No collision detected
+    
+    def circle_line_segment_intersect(self, pt1, pt2, center, radius):
+        # Vector from pt1 to pt2
+        d = pt2 - pt1
+        # Vector from pt1 to circle center
+        f = pt1 - center
+    
+        a = np.dot(d, d)
+        b = 2 * np.dot(f, d)
+        c = np.dot(f, f) - radius**2
+    
+        discriminant = b**2 - 4 * a * c
+    
+        if discriminant < 0:
+            # No intersection
+            return False
+        else:
+            # There may be an intersection
+            discriminant = np.sqrt(discriminant)
+            t1 = (-b - discriminant) / (2 * a)
+            t2 = (-b + discriminant) / (2 * a)
+    
+            # Check if either t1 or t2 is within the segment [0,1]
+            if (0 <= t1 <= 1) or (0 <= t2 <= 1):
+                return True  # Intersection occurs within the segment
+            else:
+                return False  # Intersection occurs outside the segment
 
     def get_car_status(self):
         return self.currentX, self.currentY, self.currentPHI, self.currentTHETA

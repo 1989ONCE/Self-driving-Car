@@ -15,19 +15,17 @@ class MLP(Model):
         # output:
         # layer 3: 1 neuron
 
-        layer1_neurons = 64
-        layer2_neurons = 16
+        layer1_neurons = 4
+        layer2_neurons = 2
         layer3_neurons = 1
         # Xavier initialization for weights
-        self.weights_layer1 = np.random.randn(layer1_neurons, self.input_size + 1) * np.sqrt(2. / (self.input_size + 1))
-        self.weights_layer2 = np.random.randn(layer2_neurons, layer1_neurons + 1) * np.sqrt(2. / (layer1_neurons + 1))
-        self.weights_layer3 = np.random.randn(layer3_neurons, layer2_neurons + 1) * np.sqrt(2. / (layer2_neurons + 1))
-        # self.weights_layer1 = np.array([np.random.uniform(-2, 2, self.input_size + 1) for i in range(layer1_neurons)])
-        # self.weights_layer2 = np.array([np.random.uniform(-2, 2, layer1_neurons + 1) for i in range(layer2_neurons)])
-        # self.weights_layer3 = np.array([np.random.uniform(-2, 2, layer2_neurons + 1) for i in range(layer3_neurons)])
-        # print("Initial weights_layer1:", self.weights_layer1)
-        # print("Initial weights_layer2:", self.weights_layer2)
-        # print("Initial weights_layer3:", self.weights_layer3)
+        limit1 = np.sqrt(2. / (self.input_size + 1))
+        limit2 = np.sqrt(2. / (layer1_neurons + 1))
+        limit3 = np.sqrt(2. / (layer2_neurons + 1))
+        
+        self.weights_layer1 = np.random.uniform(-limit1, limit1, (layer1_neurons, self.input_size + 1))
+        self.weights_layer2 = np.random.uniform(-limit2, limit2, (layer2_neurons, layer1_neurons + 1))
+        self.weights_layer3 = np.random.uniform(-limit3, limit3, (layer3_neurons, layer2_neurons + 1))
 
     def sigmoid(self, vj):
         return 1 / (1 + np.exp(-vj))
@@ -51,20 +49,16 @@ class MLP(Model):
         bias_x1 = np.insert(x, 0, -1)
         hidden_output1 = []
         for w in self.weights_layer1:
-            # print(w)
-            # print(self.sigmoid(np.dot(w.T, bias_x1)))
             hidden_output1.append(self.relu(np.dot(w.T, bias_x1)))
-        # print(hidden_output1)
+
         bias_x2 = np.insert(hidden_output1, 0, -1)        
         hidden_output2 = []
         for w in self.weights_layer2:
             hidden_output2.append(self.relu(np.dot(w.T, bias_x2)))
-        # print(hidden_output2)
+
         bias_x3 = np.insert(hidden_output2, 0, -1)
-        # print(bias_x3)
-        # output = self.sigmoid(np.dot(self.weights_layer3[0].T, bias_x3))
         output = np.dot(self.weights_layer3[0].T, bias_x3)
-        # print(output)
+        
         return hidden_output1, hidden_output2, output
 
     def backward(self, x, hidden_output1, hidden_output2, output, y, lr):        
@@ -94,10 +88,7 @@ class MLP(Model):
 
         for h in range(len(hidden_output1)):
             self.weights_layer1[h] += lr * layer1_delta[h] * np.insert(x, 0, -1)
-        
-        # print("Updated weights_layer3:", self.weights_layer2)
-        # print("Updated weights_layer2:", self.weights_layer2)
-        # print("Updated weights_layer1:", self.weights_layer1)
+
 
     def train(self, X, y, lr, epochs):
         # Normalize input data
@@ -131,4 +122,3 @@ class MLP(Model):
         hidden_1, hidden_2, output = self.forward(inputs)
         output = np.clip((output * self.y_std) + self.y_mean, -40, 40)
         return output
-

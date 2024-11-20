@@ -8,7 +8,6 @@ from tkinter.filedialog import asksaveasfilename
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from Model.mlp import MLP
-from Model.rbfn import RBFN
 import math
 from car import Car
 import time
@@ -379,10 +378,10 @@ class gui():
                     distances = self.car.get_distances()
                     time.sleep(0.01)
                     # 繪製感測器箭頭和車子
-                    if distances[0] > 3 and distances[1] > 3 and distances[2] > 3:
-                        self.car_artists.append(self.car.draw_sensor_distance_arrow(self.ax, 'Front', self.car.currentX, self.car.currentY, self.car.currentPHI, distances[0]))
-                        self.car_artists.append(self.car.draw_sensor_distance_arrow(self.ax, 'Left', self.car.currentX, self.car.currentY, self.car.currentPHI + 45, distances[1]))
-                        self.car_artists.append(self.car.draw_sensor_distance_arrow(self.ax, 'Right', self.car.currentX, self.car.currentY, self.car.currentPHI - 45, distances[2]))
+                    self.car_artists.append(self.car.draw_sensor_distance_arrow(self.ax, 'Front', self.car.currentX, self.car.currentY, self.car.currentPHI, distances[0]))
+                    self.car_artists.append(self.car.draw_sensor_distance_arrow(self.ax, 'Left', self.car.currentX, self.car.currentY, self.car.currentPHI + 45, distances[1]))
+                    self.car_artists.append(self.car.draw_sensor_distance_arrow(self.ax, 'Right', self.car.currentX, self.car.currentY, self.car.currentPHI - 45, distances[2]))
+                    
                     car, text, center = self.car.draw_car(self.ax)
                     self.car_artists.append(car)
                     self.car_artists.append(text)
@@ -417,18 +416,33 @@ class gui():
         print('Predicting Car Path...')
         flag = True
         output = self.model.predict(self.inputs[0])
-        
+        i = 0
         # get next theta from model
         while flag:
+            i+=1
+            print(i)
             print('Output:', output)
             self.car.set_currentTHETA(output)
             self.car.update_position()
+            print(i)
+            print('Output:', output)
             
             # Check for collision
-            if self.car.front_distance <= 3 or self.car.right_distance <= 3 or self.car.left_distance <= 3 or not self.car.is_within_boundaries():
-                print(self.car.front_distance, self.car.right_distance, self.car.left_distance, self.car.is_within_boundaries())
+            if self.car.check_collision():
                 print('Collision Detected! Stopping Prediction.')
                 flag = False
+                break
+            # if self.car.front_distance <= 3 or self.car.right_distance <= 3 or self.car.left_distance <= 3 or not self.car.is_within_boundaries():
+            #     print(self.car.front_distance, self.car.right_distance, self.car.left_distance, self.car.is_within_boundaries())
+            #     print('Collision Detected! Stopping Prediction.')
+            #     flag = False
+
+            with open('track4D.txt', 'a') as f:
+                f.write(f'{self.car.front_distance} {self.car.right_distance} {self.car.left_distance} {output}\n')
+
+            with open('track6D.txt', 'a') as f:
+                f.write(f'{self.car.currentX} {self.car.currentY} {self.car.front_distance} {self.car.right_distance} {self.car.left_distance} {output}\n')
+            
             
             # Check if car is in finishing area
             if 18 <= self.car.currentX <= 30 and 37 <= self.car.currentY:
@@ -436,12 +450,7 @@ class gui():
                 print('Car has reached the finishing area! Stopping Prediction.')
                 flag = False
             
-            with open('track4D.txt', 'a') as f:
-                f.write(f'{self.car.front_distance} {self.car.right_distance} {self.car.left_distance} {output}\n')
-
-            with open('track6D.txt', 'a') as f:
-                f.write(f'{self.car.currentX} {self.car.currentY} {self.car.front_distance} {self.car.right_distance} {self.car.left_distance} {output}\n')
-            
+           
                 
             if len(self.inputs[0]) == 3:
                 output = self.model.predict([self.car.front_distance, self.car.right_distance, self.car.left_distance])
