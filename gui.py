@@ -86,6 +86,14 @@ class gui():
                      width = 16, 
                      text = "Save Track Graph",
                      highlightbackground='white')
+        self.run_default_btn = tk.Button(
+            master=self.setting_frame,  
+            command=self.run_default, 
+            height=2,  
+            width=10, 
+            text="Run Default",
+            highlightbackground='white'
+        )
         self.layer_label = tk.Label(self.setting_frame, text="Model Layers:", bg='white', wraplength=300)
         self.layer_label.grid(row=6, column=0, columnspan=2, padx=5, pady=5, sticky='w')
         
@@ -116,6 +124,8 @@ class gui():
         self.save_btn.grid(row=4, column=1, padx=5, pady=5, sticky='w')
         self.run_car_btn.grid(row=5, column=0, padx=5, pady=5, sticky='w')
         self.run_car_btn.config(state='disabled')
+        self.run_default_btn.grid(row=5, column=1, padx=5, pady=5, sticky='w')
+
 
         self.load(self.dataDropDown.get()) # Load default data
         self.draw_car_track() # Draw track
@@ -451,3 +461,61 @@ class gui():
         # Update the loss graph in the GUI
         self.loss_graph.figure = self.loss_figure
         self.loss_graph.draw()
+    
+    def run_default(self):
+        if len(self.car_artists) > 0:
+            for artist in self.car_artists:
+                if artist is not None:
+                    artist.remove()
+            self.car_artists = []
+        if len(self.path_artists) > 0:
+            for artist in self.path_artists:
+                if artist is not None:
+                    artist.remove()
+            self.path_artists = []
+        
+        # read default.txt
+        if hasattr(sys, '_MEIPASS'):
+            path = os.path.join(sys._MEIPASS, "data/default.txt")
+        else:
+            path = os.path.join(os.path.abspath("."), "data/default.txt")
+    
+        with open(path, 'r') as f:
+            lines = f.readlines()
+            self.car.currentX = 0  # Reset car position to start from (0, 0)
+            self.car.currentY = 0
+            self.car.currentPHI = 90
+            self.train_btn.config(state='disabled')
+            try:
+                for line in lines:
+                    # Remove old car and sensor arrow artists
+                    if len(self.car_artists) > 0:
+                        for artist in self.car_artists:
+                            if artist is not None:
+                                artist.remove()
+                        self.car_artists = []
+    
+                    # Update car position
+                    self.car.currentTHETA = float(line.strip().split(' ')[-1])
+    
+                    self.car.update_position()
+                    distances = self.car.get_distances()
+                    time.sleep(0.01)
+                    # Draw sensor arrows and car
+                    self.car_artists.append(self.car.draw_sensor_distance_arrow(self.ax, 'Front', self.car.currentX, self.car.currentY, self.car.currentPHI, distances[0]))
+                    self.car_artists.append(self.car.draw_sensor_distance_arrow(self.ax, 'Left', self.car.currentX, self.car.currentY, self.car.currentPHI + 45, distances[1]))
+                    self.car_artists.append(self.car.draw_sensor_distance_arrow(self.ax, 'Right', self.car.currentX, self.car.currentY, self.car.currentPHI - 45, distances[2]))
+                    
+                    car, text, center = self.car.draw_car(self.ax)
+                    self.car_artists.append(car)
+                    self.car_artists.append(text)
+                    self.path_artists.append(center)
+    
+                    # Update canvas
+                    self.track_graph.get_tk_widget().update()
+                    self.track_graph.draw()
+                self.train_btn.config(state='normal')
+            except Exception as e:
+                print(f'Error running car: {e}')
+                self.train_btn.config(state='normal')
+                return None
