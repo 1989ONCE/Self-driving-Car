@@ -50,7 +50,7 @@ class Car():
         center_point = plt.Circle((self.currentX, self.currentY), 0.5, color='darkgrey')
         ax.add_artist(center_point)
         ax.add_artist(car)
-        text = ax.text(0.95, 0.05, f'Car Center: ({self.currentX:.2f}, {self.currentY:.2f})', transform=ax.transAxes, fontsize=8, ha='right', va='bottom')
+        text = ax.text(0.95, 0.05, f'Car Center: ({self.currentX:.2f}, {self.currentY:.2f})\n Front: {self.front_distance:.2f}\n Left: {self.left_distance:.2f}\n Right: {self.right_distance:.2f}', transform=ax.transAxes, fontsize=8, ha='right', va='bottom')
         return car, text, center_point
     
     # 計算感測器到牆壁的距離
